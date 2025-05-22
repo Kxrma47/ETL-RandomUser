@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"    # RabbitMQ protocol
+      - "15672:15672"  # RabbitMQ UI
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: pass
+    restart: always
+
+  ingestion:
+    build: ./ingestion
+    container_name: etl_ingestion
+    depends_on:
+      - rabbitmq
+    restart: always
+
+  transform:
+    build: ./transform
+    container_name: etl_transform
+    depends_on:
+      - rabbitmq
+    volumes:
+      - ./storage:/app/storage  # local folder mount
+    restart: always
+
+  minio:
+    image: minio/minio
+    container_name: minio
+    command: server /data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    volumes:
+      - minio_data:/data
+    restart: always
+
+volumes:
+  minio_data:
